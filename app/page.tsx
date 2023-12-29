@@ -63,7 +63,10 @@ export default function Home() {
     `User${Math.floor(Math.random() * 1000000)}`
   );
   const [message, setMessage] = useState("");
-  const socket = io("https://real-time-chat-app-xu48.onrender.com");
+  const url = process.env.IS_PRODUCTION
+    ? process.env.SERVER_URL
+    : process.env.LOCAL_SERVER_URL;
+  const socket = io(`${url}`);
 
   const newUserConnected = () => {
     socket.emit("new_user", userName);
