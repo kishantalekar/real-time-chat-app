@@ -107,9 +107,9 @@ export default function Home() {
     // Create the socket instance when the component mounts
 
     //to run locally
-    // const newSocket = io("http://localhost:8000");
+    const newSocket = io("http://localhost:8000");
 
-    const newSocket = io("https://real-time-chat-app-xu48.onrender.com");
+    // const newSocket = io("https://real-time-chat-app-xu48.onrender.com");
     setSocket(newSocket);
 
     // Emit "new_user" event when a new user connects

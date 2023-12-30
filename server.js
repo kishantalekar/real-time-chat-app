@@ -16,7 +16,7 @@ const url = process.env.IS_PRODUCTION
   : process.env.LOCAL_CLIENT_URL;
 const io = new Server(httpServer, {
   cors: {
-    origin: "https://real-time-chat-app-pi-gold.vercel.app", // Replace with your frontend URL
+    origin: "http://localhost:3000", // Replace with your frontend URL
     methods: ["GET", "POST"],
     allowedHeaders: ["my-custom-header"],
     credentials: true,
