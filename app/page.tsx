@@ -80,7 +80,7 @@ export default function Home() {
   const [message, setMessage] = useState("");
   const [isTyping, setIsTyping] = useState("");
   const [socket, setSocket] = useState<any>(null);
-  let timeout = undefined;
+  let timeout: any = undefined;
   const sendMessage = (e: any) => {
     e.preventDefault();
     const data = {
@@ -98,7 +98,7 @@ export default function Home() {
   };
 
   const handleNotTyping = () => {
-    setIsTyping(false);
+    setIsTyping("");
     // Emit a "not_typing" event to the server
     socket.emit("not_typing", userName);
   };
