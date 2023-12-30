@@ -93,55 +93,44 @@ export default function Home() {
   };
 
   const handleTyping = () => {
-    // Emit a "typing" event to the server
     socket.emit("typing", userName);
   };
 
   const handleNotTyping = () => {
     setIsTyping("");
-    // Emit a "not_typing" event to the server
+
     socket.emit("not_typing", userName);
   };
 
   useEffect(() => {
-    // Create the socket instance when the component mounts
-
-    //to run locally
     const newSocket = io("http://localhost:8000");
 
-    // const newSocket = io("https://real-time-chat-app-xu48.onrender.com");
     setSocket(newSocket);
 
-    // Emit "new_user" event when a new user connects
     newSocket.emit("new_user", userName);
 
-    // Listen for new users and update the active list
     newSocket.on("new_user", (data) => {
       setActiveList(data);
     });
 
-    // Listen for chat messages and update the chat list
     newSocket.on("chat_message", (data) => {
       setChatList((prev: any) => [...prev, data]);
     });
-    // Listen for "typing" events from other users
+
     newSocket.on("typing", (user) => {
       setIsTyping(user);
 
       console.log(`${user} is typing...`);
-      // You can use this information to display a typing indicator for the user
     });
 
-    // Listen for "not_typing" events from other users
     newSocket.on("not_typing", (user) => {
       console.log(`${user} stopped typing.`);
       clearTimeout(timeout);
       timeout = setTimeout(() => {
         setIsTyping("");
       }, 1000);
-      // You can use this information to hide the typing indicator for the user
     });
-    // Listen for user disconnections and update the active list
+
     newSocket.on("user_disconnected", (userId) => {
       setActiveList((prevList) => prevList.filter((user) => user !== userId));
     });
@@ -150,7 +139,7 @@ export default function Home() {
     return () => {
       newSocket.disconnect();
     };
-  }, [userName]); // Add other dependencies if needed
+  }, [userName]);
 
   return (
     <div className="flex flex-1 flex-col h-screen bg-white box-border border-collapse py-10">
