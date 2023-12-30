@@ -1,6 +1,7 @@
 "use client";
 import Image from "next/image";
 import { useEffect, useId, useState } from "react";
+import { BeatLoader, SyncLoader } from "react-spinners";
 
 import { io } from "socket.io-client";
 
@@ -56,6 +57,20 @@ const data = [
     time: "4.10pm",
   },
 ];
+
+const getTimeString = (date: any) => {
+  const options = { hour: "numeric", minute: "2-digit", hour12: true };
+  const timeString = date.toLocaleTimeString("en-US", options);
+
+  // Extracting hours, minutes, and AM/PM from the formatted time string
+  const [time, period] = timeString.split(" ");
+  const [hours, minutes] = time.split(":");
+
+  // Concatenating hours, minutes, and AM/PM in the desired format
+  const formattedTimeString = `${hours}.${minutes}${period.toLowerCase()}`;
+
+  return formattedTimeString;
+};
 export default function Home() {
   const [activeList, setActiveList] = useState([]);
   const [chatList, setChatList] = useState<any>([]);
@@ -63,40 +78,79 @@ export default function Home() {
     `User${Math.floor(Math.random() * 1000000)}`
   );
   const [message, setMessage] = useState("");
-  const url = process.env.IS_PRODUCTION
-    ? process.env.SERVER_URL
-    : process.env.LOCAL_SERVER_URL;
-  const socket = io(`${url}`);
-
-  const newUserConnected = () => {
-    socket.emit("new_user", userName);
-  };
-
+  const [isTyping, setIsTyping] = useState("");
+  const [socket, setSocket] = useState<any>(null);
+  let timeout = undefined;
   const sendMessage = (e: any) => {
     e.preventDefault();
     const data = {
       message: message,
       author: userName,
-      time: new Date(),
+      time: getTimeString(new Date()),
     };
     socket.emit("chat_message", data);
     setMessage("");
   };
+
+  const handleTyping = () => {
+    // Emit a "typing" event to the server
+    socket.emit("typing", userName);
+  };
+
+  const handleNotTyping = () => {
+    setIsTyping(false);
+    // Emit a "not_typing" event to the server
+    socket.emit("not_typing", userName);
+  };
+
   useEffect(() => {
-    newUserConnected();
+    // Create the socket instance when the component mounts
+
+    //to run locally
+    // const newSocket = io("http://localhost:8000");
+
+    const newSocket = io("https://real-time-chat-app-xu48.onrender.com");
+    setSocket(newSocket);
+
+    // Emit "new_user" event when a new user connects
+    newSocket.emit("new_user", userName);
 
     // Listen for new users and update the active list
-    socket.on("new_user", (data) => {
+    newSocket.on("new_user", (data) => {
       setActiveList(data);
     });
-    socket.on("chat_message", (data) => {
+
+    // Listen for chat messages and update the chat list
+    newSocket.on("chat_message", (data) => {
       setChatList((prev: any) => [...prev, data]);
     });
+    // Listen for "typing" events from other users
+    newSocket.on("typing", (user) => {
+      setIsTyping(user);
+
+      console.log(`${user} is typing...`);
+      // You can use this information to display a typing indicator for the user
+    });
+
+    // Listen for "not_typing" events from other users
+    newSocket.on("not_typing", (user) => {
+      console.log(`${user} stopped typing.`);
+      clearTimeout(timeout);
+      timeout = setTimeout(() => {
+        setIsTyping("");
+      }, 1000);
+      // You can use this information to hide the typing indicator for the user
+    });
     // Listen for user disconnections and update the active list
-    socket.on("user_disconnected", (userId) => {
+    newSocket.on("user_disconnected", (userId) => {
       setActiveList((prevList) => prevList.filter((user) => user !== userId));
     });
-  }, [userName]);
+
+    // Cleanup function to disconnect the socket when the component is unmounted
+    return () => {
+      newSocket.disconnect();
+    };
+  }, [userName]); // Add other dependencies if needed
 
   return (
     <div className="flex flex-1 flex-col h-screen bg-white box-border border-collapse py-10">
@@ -117,7 +171,7 @@ export default function Home() {
             </div>
           ))}
         </div>
-        <div className="flex flex-1  bg-white border border-lime-700 border-collapse rounded-r-lg flex-col">
+        <div className="flex flex-1  bg-white border border-lime-700 border-collapse rounded-r-lg flex-col relative">
           {chatList.map((msg: Msg, i: number) => {
             return msg.author === userName ? (
               <MyMsg {...msg} key={i} />
@@ -125,6 +179,11 @@ export default function Home() {
               <RecivedMsg {...msg} key={i} />
             );
           })}
+          {isTyping.length > 0 && (
+            <div className="absolute bottom-0 flex flex-row items-center">
+              <p className="text-sm  font-sans">{isTyping} is typing...</p>
+            </div>
+          )}
         </div>
       </div>
       <div className="sm:px-10 px-2">
@@ -133,7 +192,11 @@ export default function Home() {
             type="text"
             value={message}
             placeholder="type a message"
-            onChange={(e) => setMessage(e.target.value)}
+            onKeyDown={handleTyping}
+            onKeyUp={handleNotTyping}
+            onChange={(e) => {
+              setMessage(e.target.value);
+            }}
             className="flex flex-1 text-black  border-black rounded-lg pl-2"
           />
           <button className="bg-green-500 rounded-lg h-10 px-2 text-white">

@@ -16,7 +16,7 @@ const url = process.env.IS_PRODUCTION
   : process.env.LOCAL_CLIENT_URL;
 const io = new Server(httpServer, {
   cors: {
-    origin: `${url}`, // Replace with your frontend URL
+    origin: "https://real-time-chat-app-pi-gold.vercel.app", // Replace with your frontend URL
     methods: ["GET", "POST"],
     allowedHeaders: ["my-custom-header"],
     credentials: true,
@@ -35,7 +35,12 @@ io.on("connection", (socket) => {
   socket.on("chat_message", (data) => {
     io.emit("chat_message", data);
   });
-
+  socket.on("typing", function (data) {
+    socket.broadcast.emit("typing", data);
+  });
+  socket.on("not_typing", function (data) {
+    socket.broadcast.emit("not_typing", data);
+  });
   socket.on("disconnect", () => {
     activeUsers.delete(socket.userId);
     io.emit("user_disconnected", socket.userId); // Corrected event name
